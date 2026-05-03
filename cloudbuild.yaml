@@ -1,0 +1,34 @@
+steps:
+  # Step 1: Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/election-dashboard', '.']
+  
+  # Step 2: Push the image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/election-dashboard']
+    
+  # Step 3: Deploy the image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'election-dashboard'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/election-dashboard'
+      - '--region'
+      - '$_REGION'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--service-account'
+      - 'election-run-sa@$PROJECT_ID.iam.gserviceaccount.com'
+      # Mount secrets from Secret Manager
+      - '--set-secrets'
+      - 'GCP_PROJECT_ID=GCP_PROJECT_ID:latest,GCP_REGION=GCP_REGION:latest,VERTEX_SEARCH_DATASTORE_ID=VERTEX_SEARCH_DATASTORE_ID:latest,DOCAI_PROCESSOR_ID=DOCAI_PROCESSOR_ID:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,GOOGLE_MAPS_API_KEY=GOOGLE_MAPS_API_KEY:latest'
+
+images:
+  - 'gcr.io/$PROJECT_ID/election-dashboard'
+
+substitutions:
+  _REGION: us-central1
